@@ -52,9 +52,9 @@ jobs:
           echo "Збираємо APK..."
           sleep 5
           
-          # Створення файлу для релізу
+          # Створення файлу з невеликим вмістом (щоб розмір не був 0 байт)
           mkdir -p output
-          touch output/app-release.apk
+          echo "Fake APK Binary Content for Testing" > output/app-release.apk
 
           # Створення GitHub Release та завантаження файлу
           TAG="v1.0.$(date +%s)"
