@@ -1,65 +1,32 @@
-name: Build Android APK
-
-on:
-  repository_dispatch:
-    types: [build_apk]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-
-      - name: Build APK & Create Release
+- name: Build APK with Gradle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Початок компіляції APK..."
+          echo "Початок компіляції Gradle..."
           
-          # Перевірка наявності файлів
           if [ -f "app.zip" ]; then
-            echo "Архів app.zip знайдено!"
+            unzip -q app.zip -d build_workspace/
+            cd build_workspace/* || cd build_workspace
           else
             echo "Помилка: app.zip не знайдено!"
             exit 1
-          fi
+          }
 
-          # Створення папки для збірки
-          mkdir -p build_workspace
-          unzip -q app.zip -d build_workspace/
+          # Надання прав на виконання Gradle
+          chmod +x gradlew
           
-          # Якщо є іконка, копіюємо її
-          if [ -f "icon.png" ]; then
-            cp icon.png build_workspace/
-          fi
+          # Запуск збірки релізного APK
+          ./gradlew assembleRelease
 
-          # Збірка
-          echo "Збираємо APK..."
-          sleep 5
-          
-          # Створення файлу з невеликим вмістом (щоб розмір не був 0 байт)
-          mkdir -p output
-          echo "Fake APK Binary Content for Testing" > output/app-release.apk
+          # Пошук зкомпільованого APK та копіювання у папку output
+          mkdir -p ../output
+          find . -name "*.apk" -exec cp {} ../output/ app-release.apk \;
+          cd ..
 
           # Створення GitHub Release та завантаження файлу
           TAG="v1.0.$(date +%s)"
-          gh release create "$TAG" output/app-release.apk \
+          gh release create "$TAG" output/*.apk \
             --title "APK Збірка від $(date +'%Y-%m-%d %H:%M')" \
-            --notes "Автоматично зкомпільований APK для програми з мобільного сайту."
+            --notes "Автоматично зкомпільований APK через Gradle."
           
-          echo "Збірку успішно завершено та опубліковано у релізах!"
+          echo "Збірку успішно завершено!"
