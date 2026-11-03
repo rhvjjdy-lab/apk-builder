@@ -2,13 +2,13 @@ name: Build Android APK
 
 on:
   repository_dispatch:
-types: [build_apk]
+    types: [build_apk]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Потрібно для створення релізів та завантаження APK
+      contents: write
 
     steps:
       - name: Checkout code
@@ -48,7 +48,7 @@ jobs:
             cp icon.png build_workspace/
           fi
 
-          # Симуляція процесу збірки (або тут буде ваша реальна компіляція)
+          # Збірка
           echo "Збираємо APK..."
           sleep 5
           
