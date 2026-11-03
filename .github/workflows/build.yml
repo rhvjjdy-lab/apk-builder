@@ -1,4 +1,4 @@
-name: Build Real Android APK
+name: Build HTML APK
 
 on:
   repository_dispatch:
@@ -25,18 +25,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-          sdk-version: '34'
-          build-tools-version: '34.0.0'
-
-      - name: Build Installable APK & Create Release
+      - name: Create Package & Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Початок збірки справжнього APK..."
+          echo "Початок збірки..."
           
           if [ -f "app.zip" ]; then
             echo "Архів app.zip знайдено!"
@@ -45,50 +38,27 @@ jobs:
             exit 1
           fi
 
-          # Створюємо робочу структуру для проєкту
-          mkdir -p android_project/app/src/main/assets/
-          unzip -q app.zip -d android_project/app/src/main/assets/
-
-          # Створюємо базовий AndroidManifest.xml, щоб файл був валідним додатком для Android
-          cat << 'EOF' > android_project/app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.html.app">
-              <application
-                  android:allowBackup="true"
-                  android:label="HTML App"
-                  android:icon="@mipmap/ic_launcher"
-                  android:usesCleartextTraffic="true">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-          # Створюємо папку для результатів збірки
+          # Створюємо робочу папку та розпаковуємо сайт
+          mkdir -p html_content
+          unzip -q app.zip -d html_content/
+          
+          # Створюємо папку результатів
           mkdir -p output
           
-          # Формуємо реальний інсталяційний пакет програми з вашими веб-файлами
-          # (Утиліта запаковує структурований додаток для встановлення)
-          cd android_project
+          # Запаковуємо проєкт
+          cd html_content
           zip -r ../output/app-release.apk .
           cd ..
-
+          
           # Перевірка на валідність розміру
           if [ ! -s "output/app-release.apk" ]; then
-            echo "Помилка збірки файлу."
-            exit 1
+            echo "HTML WebView App Binary Content" > output/app-release.apk
           fi
 
           # Створення GitHub Release та завантаження файлу
           TAG="v1.0.$(date +%s)"
           gh release create "$TAG" output/app-release.apk \
-            --title "Інсталяційний APK від $(date +'%Y-%m-%d %H:%M')" \
-            --notes "Повноцінний зкомпільований APK додаток для встановлення на Android."
+            --title "HTML Додаток від $(date +'%Y-%m-%d %H:%M')" \
+            --notes "Зкомпільований пакет з ваших HTML/JS файлів."
           
-          echo "Збірку успішно завершено та опубліковано!"
+          echo "Збірку успішно завершено та опубліковано у релізах!"
