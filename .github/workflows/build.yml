@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Потрібно для створення релізу та завантаження файлу
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,7 +30,6 @@ jobs:
       - name: Prepare Project Files
         run: |
           mkdir -p www
-          echo "${{ github.event.client_payload.zip_base64 }}" | base64 -d > app.zip
           unzip -o app.zip -d www/
           npm install -g cordova
 
@@ -36,6 +37,11 @@ jobs:
         run: |
           cordova create build_app com.myapp.game "${{ github.event.client_payload.app_name }}"
           cp -r www/* build_app/www/
+          
+          if [ -f "icon.png" ]; then
+            cp icon.png build_app/www/icon.png
+          fi
+          
           cd build_app
           cordova platform add android
 
@@ -44,8 +50,12 @@ jobs:
           cd build_app
           cordova build android --release --no-telemetry
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v1
         with:
-          name: ${{ github.event.client_payload.app_name }}-release
-          path: build_app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          tag_name: apk-${{ github.run_number }}
+          name: '${{ github.event.client_payload.app_name }} v${{ github.run_number }}'
+          files: build_app/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          body: 'Автоматично зкомпільований APK-файл вашої програми.'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
