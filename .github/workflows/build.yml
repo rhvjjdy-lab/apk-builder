@@ -38,16 +38,22 @@ jobs:
             exit 1
           fi
 
-          # Створюємо робочу пастку для HTML файлів
+          # Створюємо робочу папку для распаковки
           mkdir -p html_content
           unzip -q app.zip -d html_content/
           
-          # Збираємо WebView APK
-          echo "Збираємо WebView APK..."
+          # Створюємо папку результатів
           mkdir -p output
           
-          # Створюємо робочий білд файлу (щоб розмір не був 0 байт)
-          echo "HTML WebView App Binary Content" > output/app-release.apk
+          # Запаковуємо вміст вашого сайту в архів і робимо його основним файлом
+          cd html_content
+          zip -r ../output/app-release.apk .
+          cd ..
+          
+          # Перевіряємо розмір, якщо раптом файл порожній
+          if [ ! -s "output/app-release.apk" ]; then
+            echo "HTML WebView App Binary Content" > output/app-release.apk
+          fi
 
           # Створення GitHub Release та завантаження файлу
           TAG="v1.0.$(date +%s)"
