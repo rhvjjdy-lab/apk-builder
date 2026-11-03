@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   repository_dispatch:
-    types: [build_apk]
+types: [build_apk]
 
 jobs:
   build:
@@ -24,15 +24,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '11'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-
-      - name: Install Android Build Tools
-        run: |
-          sdkmanager "platforms;android-33" "build-tools;33.0.2"
 
       - name: Build APK & Create Release
         env:
@@ -57,9 +48,9 @@ jobs:
             cp icon.png build_workspace/
           fi
 
-          # Демонстраційний етап збірки
+          # Симуляція процесу збірки (або тут буде ваша реальна компіляція)
           echo "Збираємо APK..."
-          sleep 10
+          sleep 5
           
           # Створення файлу для релізу
           mkdir -p output
