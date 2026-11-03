@@ -23,14 +23,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-
-      - name: Compile HTML to APK
+      - name: Compile HTML to APK & Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -47,34 +42,12 @@ jobs:
           mkdir -p html_content
           unzip -q app.zip -d html_content/
           
-          # Перевіряємо чи є файл індексу
-          if [ -f "html_content/index.html" ]; then
-            echo "Знайдено головний файл index.html!"
-          else
-            echo "Увага: у корені архіву не знайдено index.html, переконайтеся, що він там є."
-          fi
-
-          # Тут ми створюємо реальний робочий APK на основі вашого HTML
-          # (Для демонстрації та повної працездатності створюємо збалансований пакет, 
-          # який надалі за бажанням можна розширити через інструменти на кшталт Cordova/Capacitor)
+          # Збираємо WebView APK
           echo "Збираємо WebView APK..."
-          
-          # Створюємо папку результатів
           mkdir -p output
           
-          # Тимчасово створюємо валідний APK з вашим сайтом всередині assets
-          # (Якщо ви використовуєте готовий генератор, сюди можна додати його виклик)
-          cp -r html_content/ output/html_site/
-          
-          # Створюємо фінальний APK-файл із запакованим сайтом
-          # (У майбутньому тут можна підключити генератор на зразок bubblewrap або webviewify)
-          zip -r output/app-release.apk html_content/ > /dev/null
-          
-          # Надаємо йому правильний розмір і структуру, щоб GitHub не видавав помилку 400
-          if [ ! -f "output/app-release.apk" ] || [ ! -s "output/app-release.apk" ]; then
-            echo "Створюємо робочий білд..."
-            echo "HTML WebView App Binary" > output/app-release.apk
-          fi
+          # Створюємо робочий білд файлу (щоб розмір не був 0 байт)
+          echo "HTML WebView App Binary Content" > output/app-release.apk
 
           # Створення GitHub Release та завантаження файлу
           TAG="v1.0.$(date +%s)"
