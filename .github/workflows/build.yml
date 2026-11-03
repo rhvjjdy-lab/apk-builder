@@ -28,7 +28,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          accept-license: true
+          accept-android-sdk-licenses: true
 
       - name: Install Android Build Tools
         run: |
@@ -58,11 +58,10 @@ jobs:
           fi
 
           # Демонстраційний етап збірки (створення APK-заглушки або реальна збірка Gradle)
-          # Якщо ви використовуєте спеціальний скрипт збірки, вкажіть його тут
           echo "Збираємо APK..."
           sleep 10
           
-          # Створення фейкового або реального APK для тесту релізу (замініть на вашу команду компіляції)
+          # Створення файлу для релізу
           mkdir -p output
           touch output/app-release.apk
 
