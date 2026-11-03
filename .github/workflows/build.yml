@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -57,7 +57,7 @@ jobs:
             cp icon.png build_workspace/
           fi
 
-          # Демонстраційний етап збірки (створення APK-заглушки або реальна збірка Gradle)
+          # Демонстраційний етап збірки
           echo "Збираємо APK..."
           sleep 10
           
