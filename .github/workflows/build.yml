@@ -42,49 +42,33 @@ jobs:
       - name: Install Cordova globally
         run: npm install -g cordova@12.0.0
 
-      - name: Create Cordova Project and Platform
+      - name: Build Project, Inject Files and Compile (APK & AAB)
         run: |
+          # 1. Створюємо проєкт Cordova
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
-          cordova platform add android@12.0.0
-
-      - name: Force Gradle 8.5 for Compatibility
-        run: |
-          # Перевіряємо наявність шляху перед зміною gradle-wrapper
-          if [ -d "my-app/platforms/android" ]; then
-            cd my-app/platforms/android
-            sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip|' gradle/wrapper/gradle-wrapper.properties
-          else
-            echo "Шлях не знайдено, але продовжуємо..."
-          fi
-
-      - name: Inject Web Game Files
-        run: |
-          if [ -d "my-app/www" ]; then
-            cd my-app/www
-            rm -rf *
-            unzip ../../app.zip -d .
-          else
-            # Якщо шлях відрізняється, шукаємо та розпаковуємо коректно
-            mkdir -p my-app/www
-            unzip app.zip -d my-app/www
+          
+          # 2. Додаємо сумісну платформу Android
+          cordova platform add android@11.0.0
+          
+          # 3. Розпаковуємо гру у www
+          cd www
+          rm -rf *
+          unzip ../../app.zip -d .
+          cd ..
+          
+          # 4. Додаємо іконку, якщо вона є
+          if [ -f "../icon.png" ]; then
+            mkdir -p platforms/android/app/src/main/res/mipmap
+            cp ../icon.png platforms/android/app/src/main/res/mipmap/icon.png || true
           fi
           
-          if [ -f "icon.png" ]; then
-            mkdir -p my-app/platforms/android/app/src/main/res/mipmap
-            cp icon.png my-app/platforms/android/app/src/main/res/mipmap/icon.png || true
-          fi
-
-      - name: Configure App ID and Versions
-        run: |
-          cd my-app
+          # 5. Налаштовуємо ID та версії
           sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
           sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
           sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
-
-      - name: Build APK and AAB (Release)
-        run: |
-          cd my-app
+          
+          # 6. Збираємо і APK, і AAB одночасно
           cordova build android --release
           cordova build android --release -- --bundle
 
