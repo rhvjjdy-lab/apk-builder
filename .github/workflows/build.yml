@@ -19,7 +19,7 @@ jobs:
         uses: pwa-builder/pwabuilder-android-action@v1.7
         with:
           site-url: 'https://rhvjjdy-lab.github.io/apk-builder/'
-          output-type: 'apk' # або 'aab', якщо збираєте для Google Play
+          output-type: 'apk'
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
