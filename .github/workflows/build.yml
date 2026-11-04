@@ -1,28 +1,24 @@
-name: Build Android APK and AAB
+name: Build APK and AAB
 
 on:
   workflow_dispatch:
     inputs:
       app_name:
-        description: 'App Name'
-        required: false
-        default: 'My Game'
-        type: string
+        description: 'Назва додатка'
+        required: true
+        default: 'Моя Гра'
       package_id:
-        description: 'Package ID'
-        required: false
-        default: 'com.example.game'
-        type: string
+        description: 'Package ID (напр. com.author.game)'
+        required: true
+        default: 'com.mycompany.mygame'
       version_code:
         description: 'Version Code'
-        required: false
+        required: true
         default: '1'
-        type: string
       version_name:
         description: 'Version Name'
-        required: false
+        required: true
         default: '1.0.0'
-        type: string
 
 jobs:
   build:
@@ -36,35 +32,52 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Set up Java
+      - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Install Cordova globally
+        run: npm install -g cordova@12.0.0
 
-      - name: Add Android platform to Cordova
-        run: npx cordova platform add android
+      - name: Build Project and Compile (APK & AAB)
+        env:
+          CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL: "https://services.gradle.org/distributions/gradle-8.7-bin.zip"
+        run: |
+          # 1. Створюємо проєкт Cordova
+          cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
+          cd my-app
+          
+          # 2. Додаємо платформу Android 13
+          cordova platform add android@13.0.0
+          
+          # 3. Розпаковуємо гру у www
+          cd www
+          rm -rf *
+          unzip ../../app.zip -d .
+          cd ..
+          
+          # 4. Додаємо іконку, якщо вона є
+          if [ -f "../icon.png" ]; then
+            mkdir -p platforms/android/app/src/main/res/mipmap
+            cp ../icon.png platforms/android/app/src/main/res/mipmap/icon.png || true
+          fi
+          
+          # 5. Налаштовуємо ID та версії в config.xml
+          sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
+          sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
+          sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
+          
+          # 6. Збираємо APK та AAB стандартними командами (Gradle підтягнеться автоматично за вказаною URL)
+          cordova build android --release
+          cordova build android --release -- --bundle
 
-      - name: Build Android APK
-        run: npx cordova build android --release
-        # Verification: перевіряє створення APK файлу у вихідній директорії Android проєкту.
-
-      - name: Build Android AAB (Bundle)
-        run: npx cordova build android --release --packageType=bundle
-        # Verification: перевіряє створення AAB пакету для Google Play Store без перезапуску з нуля.
-
-      - name: Upload artifacts
+      - name: Upload Artifacts (APK & AAB)
         uses: actions/upload-artifact@v4
         with:
-          name: android-builds
+          name: Mobile-App-Bundles
           path: |
-            platforms/android/app/build/outputs/apk/release/*.apk
-            platforms/android/app/build/outputs/bundle/release/*.aab
+            my-app/platforms/android/app/build/outputs/apk/release/app-release.apk
+            my-app/platforms/android/app/build/outputs/bundle/release/app-release.aab
