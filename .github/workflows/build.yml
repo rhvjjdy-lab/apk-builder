@@ -42,7 +42,7 @@ jobs:
       - name: Install Cordova globally
         run: npm install -g cordova@12.0.0
 
-      - name: Create Cordova Project
+      - name: Create Cordova Project and Platform
         run: |
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
@@ -51,7 +51,6 @@ jobs:
       - name: Force Gradle 8.5 for Compatibility
         run: |
           cd my-app/platforms/android
-          # Змінюємо версію Gradle у gradle-wrapper.properties на сумісну 8.5
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip|' gradle/wrapper/gradle-wrapper.properties
 
       - name: Inject Web Game Files
