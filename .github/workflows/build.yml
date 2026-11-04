@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install PWABuilder CLI
         run: npm install -g @pwabuilder/cli
@@ -30,6 +30,6 @@ jobs:
           files: '**/*.apk'
           tag_name: "v1.0.${{ github.run_number }}"
           name: "APK збірка (#${{ github.run_number }})"
-          notes: "Згенеровано автоматично."
+          notes: "Згенеровано успішно."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
