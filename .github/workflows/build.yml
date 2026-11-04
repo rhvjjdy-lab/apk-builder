@@ -2,6 +2,27 @@ name: Build Android APK and AAB
 
 on:
   workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'App Name'
+        required: false
+        default: 'My Game'
+        type: string
+      package_id:
+        description: 'Package ID'
+        required: false
+        default: 'com.example.game'
+        type: string
+      version_code:
+        description: 'Version Code'
+        required: false
+        default: '1'
+        type: string
+      version_name:
+        description: 'Version Name'
+        required: false
+        default: '1.0.0'
+        type: string
 
 jobs:
   build:
