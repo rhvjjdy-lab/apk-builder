@@ -2,34 +2,73 @@ name: Build APK
 
 on:
   workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'Назва додатка'
+        required: true
+        default: 'Моя Гра'
+      package_id:
+        description: 'ID пакету (наприклад, com.example.game)'
+        required: true
+        default: 'com.example.mygame'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Download pre-built Android package
-        run: |
-          mkdir -p ./output
-          curl -L -o ./output/app.apk "https://github.com/rhvjjdy-lab/apk-builder/raw/main/app.apk" || echo "Creating placeholder"
-          # Якщо файл не знайдено в репозиторії, створимо базову заповнювальну структуру або завантажимо через curl
-          # Давайте використаємо пряме звернення до генератора PWABuilder через API
-          curl -X POST "https://pwabuilder-android-generator.azurewebsites.net/generateZip" \
-            -H "Content-Type: application/json" \
-            -d '{"name":"App","shortName":"App","packageId":"com.rhvjjdy.apkbuilder","version":"1.0.0","webManifestUrl":"https://rhvjjdy-lab.github.io/apk-builder/manifest.json","icons":[]}' \
-            --output result.zip
-          unzip -o result.zip -d ./android_files || true
-
-      - uses: softprops/action-gh-release@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          files: |
-            ./output/**/*.apk
-            ./result.zip
+          node-version: '18'
+
+      - name: Set up Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Cordova globally
+        run: npm install -g cordova
+
+      - name: Prepare extracted files
+        run: |
+          mkdir -p src_content
+          if [ -f "app.zip" ]; then
+            unzip -o app.zip -d src_content/
+          else
+            echo "Файл app.zip не знайдено!"
+            exit 1
+          fi
+
+      - name: Create Cordova Project & Configure
+        run: |
+          cordova create build_tmp "${{ github.event.inputs.package_id }}" "${{ github.event.inputs.app_name }}"
+          cd build_tmp
+          cordova platform add android
+          
+          # Очищаємо дефолтний шаблон та копіюємо файли користувача
+          rm -rf www/*
+          cp -r ../src_content/* www/
+          
+          # Якщо в корені репозиторію є завантажена іконка icon.png, підставляємо її
+          if [ -f "../icon.png" ]; then
+            cp ../icon.png www/icon.png
+          fi
+
+      - name: Build Android APK (Debug)
+        run: |
+          cd build_tmp
+          cordova build android --device
+
+      - name: Upload APK to Releases or Artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: 'build_tmp/platforms/android/app/build/outputs/apk/debug/app-debug.apk'
           tag_name: "v1.0.${{ github.run_number }}"
-          name: "APK збірка (#${{ github.run_number }})"
+          name: "APK збірка (#${{ github.run_number }}) - ${{ github.event.inputs.app_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
