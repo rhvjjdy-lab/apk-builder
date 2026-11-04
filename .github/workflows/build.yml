@@ -16,9 +16,8 @@ jobs:
         with:
           node-version: '20'
 
-      - run: npm install -g @pwabuilder/cli
-
-      - run: pwabuilder package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android
+      - name: Generate APK via PWABuilder
+        run: npx @pwabuilder/cli package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android
 
       - uses: softprops/action-gh-release@v1
         with:
