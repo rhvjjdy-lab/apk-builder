@@ -48,27 +48,32 @@ jobs:
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
           
-          # 2. Додаємо актуальну платформу android 12.0.0
+          # 2. Додаємо платформу android 12.0.0
           cordova platform add android@12.0.0
           
-          # 3. Розпаковуємо гру у www
+          # 3. ПРИМУСОВО змінюємо gradle wrapper на версію 8.8 (де є XmlParser і яка сумісна з Java 17)
+          cd platforms/android
+          ./gradlew wrapper --gradle-version 8.8
+          cd ../../
+          
+          # 4. Розпаковуємо гру у www
           cd www
           rm -rf *
           unzip ../../app.zip -d .
           cd ..
           
-          # 4. Додаємо іконку, якщо вона є
+          # 5. Додаємо іконку, якщо вона є
           if [ -f "../icon.png" ]; then
             mkdir -p platforms/android/app/src/main/res/mipmap
             cp ../icon.png platforms/android/app/src/main/res/mipmap/icon.png || true
           fi
           
-          # 5. Налаштовуємо ID та версії в config.xml
+          # 6. Налаштовуємо ID та версії в config.xml
           sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
           sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
           sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
           
-          # 6. Збираємо APK та AAB за допомогою стандартних команд Cordova (вони самі коректно ініціалізують gradlew всередині платформи)
+          # 7. Збираємо APK та AAB
           cordova build android --release
           cordova build android --release -- --bundle
 
