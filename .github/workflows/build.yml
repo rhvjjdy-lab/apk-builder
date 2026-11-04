@@ -39,43 +39,42 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Cordova globally
-        run: npm install -g cordova@12.0.0
+      - name: Install Cordova and Native-Run
+        run: npm install -g cordova@11.1.0
 
-      - name: Build Project, Inject Files and Compile (APK & AAB)
+      - name: Build Project Safely
         run: |
-          # 1. Створюємо проєкт Cordova
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
           
-          # 2. Додаємо платформу android 12.0.0
-          cordova platform add android@12.0.0
+          # Використовуємо стабільнішу стару платформу, яка гарантовано створює gradlew одразу
+          cordova platform add android@10.1.2
           
-          # 3. ПРИМУСОВО змінюємо gradle wrapper на версію 8.8 (де є XmlParser і яка сумісна з Java 17)
-          cd platforms/android
-          ./gradlew wrapper --gradle-version 8.8
-          cd ../../
-          
-          # 4. Розпаковуємо гру у www
+          # Заповнюємо гру
           cd www
           rm -rf *
           unzip ../../app.zip -d .
           cd ..
           
-          # 5. Додаємо іконку, якщо вона є
+          # Іконка
           if [ -f "../icon.png" ]; then
             mkdir -p platforms/android/app/src/main/res/mipmap
             cp ../icon.png platforms/android/app/src/main/res/mipmap/icon.png || true
           fi
           
-          # 6. Налаштовуємо ID та версії в config.xml
+          # Конфіг
           sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
           sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
           sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
           
-          # 7. Збираємо APK та AAB
-          cordova build android --release
-          cordova build android --release -- --bundle
+          # Головний трюк: пропатчуємо сам скрипт gradle.properties, щоб він не вимагав сторонніх інструментів
+          echo "android.useAndroidX=true" >> platforms/android/gradle.properties
+          echo "android.enableJetifier=true" >> platforms/android/gradle.properties
+
+          # Збірка через нативний градл платформи з повним шляхом
+          cd platforms/android
+          ./gradlew bundleRelease assembleRelease
+          cd ../../
 
       - name: Upload Artifacts (APK & AAB)
         uses: actions/upload-artifact@v4
