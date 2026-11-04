@@ -50,18 +50,29 @@ jobs:
 
       - name: Force Gradle 8.5 for Compatibility
         run: |
-          cd my-app/platforms/android
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip|' gradle/wrapper/gradle-wrapper.properties
+          # Перевіряємо наявність шляху перед зміною gradle-wrapper
+          if [ -d "my-app/platforms/android" ]; then
+            cd my-app/platforms/android
+            sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip|' gradle/wrapper/gradle-wrapper.properties
+          else
+            echo "Шлях не знайдено, але продовжуємо..."
+          fi
 
       - name: Inject Web Game Files
         run: |
-          cd my-app/www
-          rm -rf *
-          unzip ../../app.zip -d .
+          if [ -d "my-app/www" ]; then
+            cd my-app/www
+            rm -rf *
+            unzip ../../app.zip -d .
+          else
+            # Якщо шлях відрізняється, шукаємо та розпаковуємо коректно
+            mkdir -p my-app/www
+            unzip app.zip -d my-app/www
+          fi
           
-          if [ -f ../../icon.png ]; then
-            mkdir -p ../res/icon/android
-            cp ../../icon.png ../res/icon/android/icon.png
+          if [ -f "icon.png" ]; then
+            mkdir -p my-app/platforms/android/app/src/main/res/mipmap
+            cp icon.png my-app/platforms/android/app/src/main/res/mipmap/icon.png || true
           fi
 
       - name: Configure App ID and Versions
