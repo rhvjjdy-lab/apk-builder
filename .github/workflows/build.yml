@@ -18,7 +18,7 @@ jobs:
 
       - run: npm install -g @pwabuilder/cli
 
-      - run: pwabuilder package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android --options '{"name": "App", "shortName": "App", "packageId": "com.rhvjjdy.apkbuilder", "version": "1.0.0", "sign": false}'
+      - run: pwabuilder package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android
 
       - uses: softprops/action-gh-release@v1
         with:
