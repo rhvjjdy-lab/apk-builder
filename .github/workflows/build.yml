@@ -37,25 +37,23 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
-      - name: Install Cordova and Native-Run globally
-        run: npm install -g cordova native-run
+      - name: Install Cordova globally
+        run: npm install -g cordova@12.0.0
 
       - name: Create Cordova Project
         run: |
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
-          cordova platform add android@12.0.0
+          cordova platform add android@11.0.0
 
       - name: Inject Web Game Files
         run: |
           cd my-app/www
           rm -rf *
-          # Розпаковуємо app.zip, який завантажив наш сервер із Termux
           unzip ../../app.zip -d .
           
-          # Якщо є іконка, підставляємо її
           if [ -f ../../icon.png ]; then
             mkdir -p ../res/icon/android
             cp ../../icon.png ../res/icon/android/icon.png
@@ -64,20 +62,14 @@ jobs:
       - name: Configure App ID and Versions
         run: |
           cd my-app
-          # Оновлюємо config.xml правильними даними для Google Play
           sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
           sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
-          
-          # Додаємо version_code у config.xml для Android
           sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
 
       - name: Build APK and AAB (Release)
         run: |
           cd my-app
-          # Збираємо звичайний APK для тестів
           cordova build android --release
-          
-          # Збираємо Android App Bundle (AAB) для Google Play
           cordova build android --release -- --bundle
 
       - name: Upload Artifacts (APK & AAB)
