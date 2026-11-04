@@ -1,8 +1,9 @@
-name: Build Real Android APK
+name: Build APK via PWABuilder
 
 on:
   repository_dispatch:
     types: [build_apk]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,60 +12,21 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Generate APK via PWABuilder
+        uses: pwa-builder/pwabuilder-android-action@v1.7
         with:
-          node-version: 20
+          site-url: 'https://rhvjjdy-lab.github.io/apk-builder/'
+          output-type: 'apk' # або 'aab', якщо збираєте для Google Play
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v1
         with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Automated APK Compilation
+          files: ./*.apk
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Автоматичний APK від PWABuilder (#${{ github.run_number }})"
+          notes: "Згенеровано автоматично через офіційний хмарний екшен PWABuilder."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Початок автоматичної збірки нативного APK..."
-          
-          if [ -f "app.zip" ]; then
-            echo "Архів app.zip знайдено!"
-          else
-            echo "Помилка: app.zip не знайдено!"
-            exit 1
-          fi
-
-          # Встановлюємо легкий інструмент через npm
-          npm install -g @bubblewrap/cli
-
-          # Створюємо робочу директорію
-          mkdir -p build_app
-          unzip -q app.zip -d build_app/
-
-          # Створюємо папку для готового APK
-          mkdir -p output
-
-          if [ -f "build_app/index.html" ]; then
-            echo "Файл index.html знайдено, готуємо пакет..."
-          fi
-
-          # Створюємо інсталяційний файл програми
-          cp build_app/index.html output/app-release.apk 2>/dev/null || echo "Web App Binary" > output/app-release.apk
-
-          # Перевіряємо розмір
-          if [ ! -s "output/app-release.apk" ]; then
-            echo "Помилка збірки"
-            exit 1
-          fi
-
-          # Публікація автоматичного релізу з готовим файлом
-          TAG="v1.0.$(date +%s)"
-          gh release create "$TAG" output/app-release.apk \
-            --title "Автоматичний APK від $(date +'%Y-%m-%d %H:%M')" \
-            --notes "Повністю автоматично згенерований інсталяційний файл з вашого сайту."
-          
-          echo "Автоматичну збірку успішно завершено!"
