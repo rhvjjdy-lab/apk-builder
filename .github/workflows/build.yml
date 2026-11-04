@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK and AAB
 
 on:
   workflow_dispatch:
@@ -8,16 +8,24 @@ on:
         required: true
         default: 'Моя Гра'
       package_id:
-        description: 'ID пакету (наприклад, com.example.game)'
+        description: 'Package ID (напр. com.author.game)'
         required: true
-        default: 'com.example.mygame'
+        default: 'com.mycompany.mygame'
+      version_code:
+        description: 'Version Code'
+        required: true
+        default: '1'
+      version_name:
+        description: 'Version Name'
+        required: true
+        default: '1.0.0'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -25,50 +33,57 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Set up Java (JDK 17)
+      - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Cordova globally
-        run: npm install -g cordova
+      - name: Install Cordova and Native-Run globally
+        run: npm install -g cordova native-run
 
-      - name: Prepare extracted files
+      - name: Create Cordova Project
         run: |
-          mkdir -p src_content
-          if [ -f "app.zip" ]; then
-            unzip -o app.zip -d src_content/
-          else
-            echo "Файл app.zip не знайдено!"
-            exit 1
+          cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
+          cd my-app
+          cordova platform add android@12.0.0
+
+      - name: Inject Web Game Files
+        run: |
+          cd my-app/www
+          rm -rf *
+          # Розпаковуємо app.zip, який завантажив наш сервер із Termux
+          unzip ../../app.zip -d .
+          
+          # Якщо є іконка, підставляємо її
+          if [ -f ../../icon.png ]; then
+            mkdir -p ../res/icon/android
+            cp ../../icon.png ../res/icon/android/icon.png
           fi
 
-      - name: Create Cordova Project & Configure
+      - name: Configure App ID and Versions
         run: |
-          cordova create build_tmp "${{ github.event.inputs.package_id }}" "${{ github.event.inputs.app_name }}"
-          cd build_tmp
-          cordova platform add android
+          cd my-app
+          # Оновлюємо config.xml правильними даними для Google Play
+          sed -i 's/id="[^"]*"/id="${{ github.event.inputs.package_id }}"/g' config.xml
+          sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
           
-          # Очищаємо дефолтний шаблон та копіюємо файли користувача
-          rm -rf www/*
-          cp -r ../src_content/* www/
-          
-          # Якщо в корені репозиторію є завантажена іконка icon.png, підставляємо її
-          if [ -f "../icon.png" ]; then
-            cp ../icon.png www/icon.png
-          fi
+          # Додаємо version_code у config.xml для Android
+          sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
 
-      - name: Build Android APK (Debug)
+      - name: Build APK and AAB (Release)
         run: |
-          cd build_tmp
-          cordova build android --device
+          cd my-app
+          # Збираємо звичайний APK для тестів
+          cordova build android --release
+          
+          # Збираємо Android App Bundle (AAB) для Google Play
+          cordova build android --release -- --bundle
 
-      - name: Upload APK to Releases or Artifacts
-        uses: softprops/action-gh-release@v1
+      - name: Upload Artifacts (APK & AAB)
+        uses: actions/upload-artifact@v4
         with:
-          files: 'build_tmp/platforms/android/app/build/outputs/apk/debug/app-debug.apk'
-          tag_name: "v1.0.${{ github.run_number }}"
-          name: "APK збірка (#${{ github.run_number }}) - ${{ github.event.inputs.app_name }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Mobile-App-Bundles
+          path: |
+            my-app/platforms/android/app/build/outputs/apk/release/app-release.apk
+            my-app/platforms/android/app/build/outputs/bundle/release/app-release.aab
