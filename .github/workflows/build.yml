@@ -37,10 +37,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
 
       - name: Install Cordova globally
-        run: npm install -g cordova@11.1.0
+        run: npm install -g cordova@12.0.0
 
       - name: Build Project, Inject Files and Compile (APK & AAB)
         run: |
@@ -48,8 +48,8 @@ jobs:
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
           
-          # 2. Додаємо перевірену платформу android 10.1.2 (повністю сумісна з Java 11 та старим Gradle)
-          cordova platform add android@10.1.2
+          # 2. Додаємо актуальну платформу android 12.0.0 (вона сумісна з Java 17)
+          cordova platform add android@12.0.0
           
           # 3. Розпаковуємо гру у www
           cd www
@@ -68,9 +68,10 @@ jobs:
           sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version_name }}"/g' config.xml
           sed -i '/<widget /a \    <preference name="android-versionCode" value="${{ github.event.inputs.version_code }}" />' config.xml
           
-          # 6. Збираємо і APK, і AAB одночасно
-          cordova build android --release
-          cordova build android --release -- --bundle
+          # 6. Використовуємо локальний gradle wrapper безпосередньо з папки платформи, ігноруючи глобальний шкідливий gradle 9
+          cd platforms/android
+          ./gradlew bundleRelease assembleRelease
+          cd ../../
 
       - name: Upload Artifacts (APK & AAB)
         uses: actions/upload-artifact@v4
