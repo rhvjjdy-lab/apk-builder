@@ -1,4 +1,4 @@
-name: Build APK via PWABuilder
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -10,26 +10,20 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install PWABuilder CLI
-        run: npm install -g @pwabuilder/cli
+      - run: npm install -g @pwabuilder/cli
 
-      - name: Generate Android Package
-        run: pwabuilder package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android --options '{"name": "App", "shortName": "App", "packageId": "com.rhvjjdy.apkbuilder", "version": "1.0.0", "sign": false}'
+      - run: pwabuilder package --webManifestUrl https://rhvjjdy-lab.github.io/apk-builder/manifest.json --platforms android --options '{"name": "App", "shortName": "App", "packageId": "com.rhvjjdy.apkbuilder", "version": "1.0.0", "sign": false}'
 
-      - name: Upload APK to Release
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v1
         with:
           files: '**/*.apk'
           tag_name: "v1.0.${{ github.run_number }}"
           name: "APK збірка (#${{ github.run_number }})"
-          notes: "Згенеровано успішно."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
