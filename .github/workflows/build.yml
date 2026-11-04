@@ -30,6 +30,6 @@ jobs:
           files: '**/*.apk'
           tag_name: "v1.0.${{ github.run_number }}"
           name: "APK збірка (#${{ github.run_number }})"
-          notes: "Автоматично згенеровано через PWABuilder CLI."
+          notes: "Згенеровано автоматично."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
