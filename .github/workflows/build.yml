@@ -37,10 +37,10 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
       - name: Install Cordova globally
-        run: npm install -g cordova@12.0.0
+        run: npm install -g cordova@11.1.0
 
       - name: Build Project, Inject Files and Compile (APK & AAB)
         run: |
@@ -48,8 +48,8 @@ jobs:
           cordova create my-app ${{ github.event.inputs.package_id }} "${{ github.event.inputs.app_name }}"
           cd my-app
           
-          # 2. Додаємо сумісну платформу Android
-          cordova platform add android@11.0.0
+          # 2. Додаємо перевірену платформу android 10.1.2 (повністю сумісна з Java 11 та старим Gradle)
+          cordova platform add android@10.1.2
           
           # 3. Розпаковуємо гру у www
           cd www
